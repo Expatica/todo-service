@@ -9,6 +9,32 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TodoTest {
 
     @Test
+    void construct_whenEmptyDescription_fails() {
+        assertThrows(IllegalArgumentException.class, () -> new Todo("", Instant.now().plusSeconds(3600)));
+        assertThrows(IllegalArgumentException.class, () -> new Todo("  ", Instant.now().plusSeconds(3600)));
+    }
+
+    @Test
+    void construct_whenNullDescription_fails() {
+        assertThrows(IllegalArgumentException.class, () -> new Todo(null, Instant.now().plusSeconds(3600)));
+    }
+
+    @Test
+    void construct_whenLongDescription_fails() {
+        assertThrows(IllegalArgumentException.class, () -> new Todo("A".repeat(256), Instant.now().plusSeconds(3600)));
+    }
+
+    @Test
+    void construct_whenDueDateNull_fails() {
+        assertThrows(IllegalArgumentException.class, () -> new Todo("Task", null));
+    }
+
+    @Test
+    void construct_whenDueDatePast_fails() {
+        assertThrows(IllegalArgumentException.class, () -> new Todo("Task", Instant.now().minusSeconds(3600)));
+    }
+
+    @Test
     void changeDescription_whenDueDateFuture_changesDescription() {
         Todo t = new Todo("initial", Instant.now().plusSeconds(3600));
         t.changeDescription("updated");
