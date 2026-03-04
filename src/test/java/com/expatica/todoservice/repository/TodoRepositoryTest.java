@@ -38,14 +38,16 @@ public class TodoRepositoryTest {
     @Test
     void saveAndFindById_createsAndRetrieves() {
         Todo todo = new Todo("Test task", futureTime);
-        Todo saved = todoRepository.save(todo);
+        Todo saved = todoRepository.saveAndFlush(todo);
 
         assertNotNull(saved.getId());
+        assertNotNull(saved.getCreatedAt());
         assertTrue(todoRepository.existsById(saved.getId()));
 
         Todo found = todoRepository.findById(saved.getId()).orElse(null);
         assertNotNull(found);
         assertEquals("Test task", found.getDescription());
+        assertNotNull(found.getCreatedAt());
     }
 
     @Test
@@ -147,7 +149,7 @@ public class TodoRepositoryTest {
     @Test
     void findNotDoneWithPastDueDate_returnsOnlyNotDonePastDue() {
         Todo notDoneFuture = new Todo("Future task", futureTime);
-        Todo notDonePast = new Todo("Past task", pastTime);
+        Todo notDonePast = new TodoBuilder("Past task", pastTime).build();
         Todo doneFuture = new Todo("Done future", futureTime);
         Todo donePast = new TodoBuilder("Done past", pastTime)
                 .withCompletedAt(pastTime)
@@ -172,7 +174,7 @@ public class TodoRepositoryTest {
     @Test
     void updateNotDoneToPastDue_transitionsCorrectly() {
         Todo notDoneFuture = new Todo("Future task", futureTime);
-        Todo notDonePast = new Todo("Past task", pastTime);
+        Todo notDonePast = new TodoBuilder("Past task", pastTime).build();
         Todo done = new Todo("Done task", futureTime);
 
         todoRepository.saveAll(List.of(notDoneFuture, notDonePast, done));
@@ -197,7 +199,7 @@ public class TodoRepositoryTest {
     @Test
     void updateNotDoneToPastDue_multipleUpdates() {
         for (int i = 0; i < 5; i++) {
-            todoRepository.save(new Todo("Task " + i, pastTime));
+            todoRepository.save(new TodoBuilder("Task " + i, pastTime).build());
         }
 
         Instant now = Instant.now();

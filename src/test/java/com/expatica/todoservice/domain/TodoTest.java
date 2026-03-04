@@ -17,13 +17,13 @@ public class TodoTest {
 
     @Test
     void changeDescription_whenDueDatePast_throwsImmutableTodoException() {
-        Todo t = new Todo("initial", Instant.now().minusSeconds(60));
+        Todo t = new TodoBuilder("initial", Instant.now().minusSeconds(60)).build();
         assertThrows(ImmutableTodoException.class, () -> t.changeDescription("updated"));
     }
 
     @Test
     void getStatus_transitionsToPastDue_whenDuePassed() {
-        Todo t = new Todo("initial", Instant.now().minusSeconds(60));
+        Todo t = new TodoBuilder("initial", Instant.now().minusSeconds(60)).build();
         assertEquals(TodoStatus.PAST_DUE, t.getStatus());
         // subsequent calls should remain PAST_DUE
         assertEquals(TodoStatus.PAST_DUE, t.getStatus());
@@ -41,7 +41,7 @@ public class TodoTest {
 
     @Test
     void markAsDone_whenDueDatePast_throwsImmutableTodoException() {
-        Todo t = new Todo("task", Instant.now().minusSeconds(60));
+        Todo t = new TodoBuilder("task", Instant.now().minusSeconds(60)).build();
         assertThrows(ImmutableTodoException.class, t::markAsDone);
     }
 
@@ -52,6 +52,15 @@ public class TodoTest {
         t.markAsNotDone();
         assertEquals(TodoStatus.NOT_DONE, t.getStatus());
         assertNull(t.getCompletedAt());
+    }
+
+    @Test
+    void markAsNotDone_whenDueDatePast_throwsImmutableTodoException() {
+        Todo t = new TodoBuilder("task", Instant.now().minusSeconds(60))
+                .withStatus(TodoStatus.DONE)
+                .withCompletedAt(Instant.now().minusSeconds(120))
+                .build();
+        assertThrows(ImmutableTodoException.class, t::markAsDone);
     }
 
     @Test

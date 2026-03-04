@@ -1,7 +1,8 @@
 package com.expatica.todoservice.domain;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -32,15 +33,23 @@ public class Todo {
     }
 
     public Todo(
-            @NotBlank @Size(max = 255) String description,
-            @NotNull @Future Instant dueAt
+            String description,
+            Instant dueAt
     ) {
+        // Validate description
+        Todo.requireNonBlankDescriptionUnder255Characters(description);
+
+        // Validate dueAt
+        Todo.requireFutureDueDate(dueAt);
+
         this.description = description;
         this.dueAt = dueAt;
     }
 
-    public void changeDescription(@NotBlank @Size(max = 255) String description) {
-        Todo.requireFutureDueDate(this);
+    public void changeDescription(String description) {
+        Todo.requireNonBlankDescriptionUnder255Characters(description);
+        Todo.requireFutureDueDateToModify(this);
+        Todo.requireNotDoneStatus(this);
         this.description = description;
     }
 
@@ -72,7 +81,7 @@ public class Todo {
     }
 
     public void markAsDone() {
-        Todo.requireFutureDueDate(this);
+        Todo.requireFutureDueDateToModify(this);
         Todo.requireAllowedStatusTransition(this, TodoStatus.DONE);
 
         this.status = TodoStatus.DONE;
@@ -80,21 +89,48 @@ public class Todo {
     }
 
     public void markAsNotDone() {
+        Todo.requireFutureDueDateToModify(this);
         Todo.requireAllowedStatusTransition(this, TodoStatus.NOT_DONE);
 
         this.status = TodoStatus.NOT_DONE;
         this.completedAt = null;
     }
 
-    private static void requireFutureDueDate(Todo todo) {
+
+    private static void requireAllowedStatusTransition(Todo todo, TodoStatus toStatus) {
+        if (!todo.getStatus().canTransitionTo(toStatus)) {
+            throw new InvalidTodoStatusTransitionException(todo, toStatus);
+        }
+    }
+
+    private static void requireFutureDueDate(Instant dueAt) {
+        if (dueAt == null) {
+            throw new IllegalArgumentException("Due date must not be null");
+        }
+
+        if (dueAt.isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Due date must be in the future");
+        }
+    }
+
+    private static void requireFutureDueDateToModify(Todo todo) {
         if (todo.dueAt.isBefore(Instant.now())) {
             throw new ImmutableTodoException(todo.getId());
         }
     }
 
-    private static void requireAllowedStatusTransition(Todo todo, TodoStatus toStatus) {
-        if (!todo.getStatus().canTransitionTo(toStatus)) {
-            throw new InvalidTodoStatusTransitionException(todo, toStatus);
+    private static void requireNonBlankDescriptionUnder255Characters(String description) {
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("Description must not be blank");
+        }
+        if (description.length() > 255) {
+            throw new IllegalArgumentException("Description must not exceed 255 characters");
+        }
+    }
+
+    private static void requireNotDoneStatus(Todo todo) {
+        if (todo.getStatus() != TodoStatus.NOT_DONE) {
+            throw new InvalidTodoStatusTransitionException(todo, TodoStatus.NOT_DONE);
         }
     }
 }

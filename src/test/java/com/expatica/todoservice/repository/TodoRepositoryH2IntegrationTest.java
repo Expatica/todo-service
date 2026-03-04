@@ -1,6 +1,7 @@
 package com.expatica.todoservice.repository;
 
 import com.expatica.todoservice.domain.Todo;
+import com.expatica.todoservice.domain.TodoBuilder;
 import com.expatica.todoservice.domain.TodoStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -199,7 +200,7 @@ public class TodoRepositoryH2IntegrationTest {
 
         // Create todos with various states
         todoRepository.save(new Todo("Future task", future));
-        todoRepository.save(new Todo("Past task", past));
+        todoRepository.save(new TodoBuilder("Past task", past).build());
 
         todoRepository.flush();
 
