@@ -1,8 +1,7 @@
 package com.expatica.todoservice.domain;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -19,7 +18,7 @@ public class Todo {
     @Size(max = 255)
     private String description;
 
-    private Instant dueDateTime;
+    private Instant dueAt;
 
     @CreationTimestamp
     private Instant createdAt;
@@ -32,101 +31,70 @@ public class Todo {
     protected Todo() {
     }
 
-    public Todo(String description, Instant dueDateTime) {
+    public Todo(
+            @NotBlank @Size(max = 255) String description,
+            @NotNull @Future Instant dueAt
+    ) {
         this.description = description;
-        this.dueDateTime = dueDateTime;
+        this.dueAt = dueAt;
     }
 
-    public void changeDescription() {
-        ensureStatusAllowsModification();
-        setDescription(description);
+    public void changeDescription(@NotBlank @Size(max = 255) String description) {
+        Todo.requireFutureDueDate(this);
+        this.description = description;
     }
 
-    public void changeDueDate(Instant dueDateTime) {
-        ensureStatusAllowsModification();
-        setDueDateTime(dueDateTime);
-    }
-
-    public void markAsDone() {
-        // Do nothing if being asked to mark a done item as done
-        if (getStatus() == TodoStatus.DONE) return;
-
-        setStatus(TodoStatus.DONE);
-        setCompletedAt(Instant.now());
-    }
-
-    public void markAsNotDone() {
-        TodoStatus status = (this.dueDateTime != null && this.dueDateTime.isBefore(Instant.now()))
-                ? TodoStatus.NOT_DONE
-                : TodoStatus.PAST_DUE;
-
-        setStatus(status);
-        setCompletedAt(null);
-    }
-
-
-    // Getters and Setters
     public UUID getId() {
         return id;
-    }
-
-    protected void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    protected void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Instant getDueDateTime() {
-        return dueDateTime;
-    }
-
-    protected void setDueDateTime(Instant dueDateTime) {
-        this.dueDateTime = dueDateTime;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    protected void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getCompletedAt() {
         return completedAt;
     }
 
-    protected void setCompletedAt(Instant completedAt) {
-        this.completedAt = completedAt;
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Instant getDueAt() {
+        return dueAt;
     }
 
     public TodoStatus getStatus() {
-        if (this.status == TodoStatus.NOT_DONE && this.dueDateTime != null && this.dueDateTime.isAfter(Instant.now())) {
-            setStatus(TodoStatus.PAST_DUE);
+        if (this.status == TodoStatus.NOT_DONE && this.dueAt.isBefore(Instant.now())) {
+            this.status = TodoStatus.PAST_DUE;
         }
         return this.status;
     }
 
-    protected void setStatus(TodoStatus status) {
-        this.status = status;
+    public void markAsDone() {
+        Todo.requireFutureDueDate(this);
+        Todo.requireAllowedStatusTransition(this, TodoStatus.DONE);
+
+        this.status = TodoStatus.DONE;
+        this.completedAt = Instant.now();
     }
 
-    private void ensureStatusAllowsModification() {
-        TodoStatus currentStatus = getStatus();
+    public void markAsNotDone() {
+        Todo.requireAllowedStatusTransition(this, TodoStatus.NOT_DONE);
 
-        if (currentStatus == TodoStatus.DONE) {
-            throw new TodoUnmodifiablePropertyException(this);
-        }
+        this.status = TodoStatus.NOT_DONE;
+        this.completedAt = null;
+    }
 
-        if (currentStatus == TodoStatus.PAST_DUE) {
-            throw new TodoUnmodifiablePropertyException(this);
+    private static void requireFutureDueDate(Todo todo) {
+        if (todo.dueAt.isBefore(Instant.now())) {
+            throw new ImmutableTodoException(todo.getId());
         }
     }
 
+    private static void requireAllowedStatusTransition(Todo todo, TodoStatus toStatus) {
+        if (!todo.getStatus().canTransitionTo(toStatus)) {
+            throw new InvalidTodoStatusTransitionException(todo, toStatus);
+        }
+    }
 }
