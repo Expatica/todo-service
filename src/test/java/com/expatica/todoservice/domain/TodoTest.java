@@ -48,6 +48,24 @@ public class TodoTest {
     }
 
     @Test
+    void changeDescription_whenDescriptionEmpty_throwsIllegalArgumentException() {
+        Todo t = new TodoBuilder("initial", Instant.now().plusSeconds(3600)).build();
+        assertThrows(IllegalArgumentException.class, () -> t.changeDescription(""));
+    }
+
+    @Test
+    void changeDescription_whenDescriptionNull_throwsIllegalArgumentException() {
+        Todo t = new TodoBuilder("initial", Instant.now().plusSeconds(3600)).build();
+        assertThrows(IllegalArgumentException.class, () -> t.changeDescription(null));
+    }
+
+    @Test
+    void changeDescription_whenDescriptionTooLong_throwsIllegalArgumentException() {
+        Todo t = new TodoBuilder("initial", Instant.now().plusSeconds(3600)).build();
+        assertThrows(IllegalArgumentException.class, () -> t.changeDescription("A".repeat(256)));
+    }
+
+    @Test
     void getStatus_transitionsToPastDue_whenDuePassed() {
         Todo t = new TodoBuilder("initial", Instant.now().minusSeconds(60)).build();
         assertEquals(TodoStatus.PAST_DUE, t.getStatus());
