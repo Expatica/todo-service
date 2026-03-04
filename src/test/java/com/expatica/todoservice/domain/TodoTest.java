@@ -1,0 +1,70 @@
+package com.expatica.todoservice.domain;
+
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class TodoTest {
+
+    @Test
+    void changeDescription_whenDueDateFuture_changesDescription() {
+        Todo t = new Todo("initial", Instant.now().plusSeconds(3600));
+        t.changeDescription("updated");
+        assertEquals("updated", t.getDescription());
+    }
+
+    @Test
+    void changeDescription_whenDueDatePast_throwsImmutableTodoException() {
+        Todo t = new Todo("initial", Instant.now().minusSeconds(60));
+        assertThrows(ImmutableTodoException.class, () -> t.changeDescription("updated"));
+    }
+
+    @Test
+    void getStatus_transitionsToPastDue_whenDuePassed() {
+        Todo t = new Todo("initial", Instant.now().minusSeconds(60));
+        assertEquals(TodoStatus.PAST_DUE, t.getStatus());
+        // subsequent calls should remain PAST_DUE
+        assertEquals(TodoStatus.PAST_DUE, t.getStatus());
+    }
+
+    @Test
+    void markAsDone_setsStatusAndCompletedAt_whenDueDateFuture() {
+        Todo t = new Todo("task", Instant.now().plusSeconds(3600));
+        t.markAsDone();
+        assertEquals(TodoStatus.DONE, t.getStatus());
+        assertNotNull(t.getCompletedAt());
+        // completedAt should be in the past (or now) relative to test time
+        assertTrue(t.getCompletedAt().isBefore(Instant.now().plusSeconds(1)));
+    }
+
+    @Test
+    void markAsDone_whenDueDatePast_throwsImmutableTodoException() {
+        Todo t = new Todo("task", Instant.now().minusSeconds(60));
+        assertThrows(ImmutableTodoException.class, t::markAsDone);
+    }
+
+    @Test
+    void markAsNotDone_fromDone_setsNotDone() {
+        Todo t = new Todo("task", Instant.now().plusSeconds(3600));
+        t.markAsDone();
+        t.markAsNotDone();
+        assertEquals(TodoStatus.NOT_DONE, t.getStatus());
+        assertNull(t.getCompletedAt());
+    }
+
+    @Test
+    void markAsNotDone_whenNotDone_throwsInvalidTodoStatusTransitionException() {
+        Todo t = new Todo("task", Instant.now().plusSeconds(3600));
+        assertThrows(InvalidTodoStatusTransitionException.class, t::markAsNotDone);
+    }
+
+    @Test
+    void markAsDone_whenAlreadyDone_throwsInvalidTodoStatusTransitionException() {
+        Todo t = new Todo("task", Instant.now().plusSeconds(3600));
+        t.markAsDone();
+        assertThrows(InvalidTodoStatusTransitionException.class, t::markAsDone);
+    }
+}
+
