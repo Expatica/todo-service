@@ -2,6 +2,7 @@ package com.expatica.todoservice.controller.mapper;
 
 import com.expatica.todoservice.controller.dto.TodoResponse;
 import com.expatica.todoservice.domain.Todo;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,10 @@ public class TodoMapper {
                 todo.getCompletedAt(),
                 todo.getStatus()
         );
+    }
+
+    public Page<TodoResponse> toResponsePage(Page<Todo> page) {
+        return page.map(this::toResponse);
     }
 
 }
