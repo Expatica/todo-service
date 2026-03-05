@@ -20,7 +20,7 @@ public record CreateTodoRequest(
 
         @NotNull(message = "Due date must not be null")
         @Future(message = "Due date must be in the future")
-        @Schema(description = "Due date for the todo item in ISO 8601 format", example = "2026-03-10T12:00:00Z")
+        @Schema(description = "Due date for the todo item in ISO 8601 format", example = "2050-01-01T12:00:00Z")
         Instant dueAt
 ) { }
 
