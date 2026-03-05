@@ -364,7 +364,7 @@ class TodoServiceTest {
 
     @Nested
     @DisplayName("Mark as NOT_DONE - PAST_DUE Status (Immutable)")
-    class MarkAsNotDonePastDueImmuteTests {
+    class MarkAsNotDonePastDueImmutableTests {
 
         @Test
         @DisplayName("should reject marking PAST_DUE todo as NOT_DONE (immutable)")

@@ -48,7 +48,7 @@ public class PastDueScheduler {
      */
     @Scheduled(fixedRate = 60000, initialDelay = 10000)
     @Transactional
-    public void markNotDoneAsPastDue() {
+    public void transitionNotDoneToPastDue() {
         Instant now = Instant.now();
         int updated = todoRepository.updateNotDoneToPastDue(now);
 
