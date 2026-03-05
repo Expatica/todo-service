@@ -5,7 +5,6 @@ import com.expatica.todoservice.controller.dto.TodoResponse;
 import com.expatica.todoservice.domain.TodoStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
@@ -19,9 +18,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,7 +36,7 @@ class TodoControllerTest {
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
-    @BeforeEach
+    @org.junit.jupiter.api.BeforeEach
     void setUp() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         this.objectMapper = new ObjectMapper();
@@ -106,13 +103,60 @@ class TodoControllerTest {
         CreateTodoRequest request = new CreateTodoRequest("", futureDate);
 
         // Act & Assert
-        assertThatThrownBy(() ->
-                mockMvc.perform(
+        mockMvc.perform(
                         post("/todos")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                 )
-        ).isInstanceOf(Exception.class);
+                .andExpect(status().isBadRequest());
+    }
 
+    @Test
+    void testGetTodosByStatus() throws Exception {
+        // Act & Assert
+        mockMvc.perform(
+                        get("/todos")
+                                .param("status", TodoStatus.NOT_DONE.toString())
+                                .param("page", "0")
+                                .param("size", "10")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.pageSize").value(10));
+    }
+
+    @Test
+    void testMarkTodoAsDone() throws Exception {
+        // Arrange - Create a todo first
+        Instant futureDate = Instant.now().plus(7, ChronoUnit.DAYS);
+        CreateTodoRequest createRequest = new CreateTodoRequest("Mark done test", futureDate);
+
+        var createResult = mockMvc.perform(
+                        post("/todos")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+        var todoId = created.id();
+
+        // Act & Assert - Mark as done
+        mockMvc.perform(patch("/todos/{id}/mark-done", todoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(TodoStatus.DONE.toString()));
     }
 }
+
+
+
+
+
+
+
+
