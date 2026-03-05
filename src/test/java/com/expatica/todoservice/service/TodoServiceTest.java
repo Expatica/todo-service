@@ -1,11 +1,7 @@
 package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.config.ValidationConfig;
-import com.expatica.todoservice.domain.ImmutableTodoException;
-import com.expatica.todoservice.domain.InvalidTodoStatusTransitionException;
-import com.expatica.todoservice.domain.Todo;
-import com.expatica.todoservice.domain.TodoBuilder;
-import com.expatica.todoservice.domain.TodoStatus;
+import com.expatica.todoservice.domain.*;
 import com.expatica.todoservice.repository.TodoRepository;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -182,7 +178,7 @@ class TodoServiceTest {
             todoService.markAsDone(created.getId());
 
             assertThrows(
-                InvalidTodoStatusTransitionException.class,
+                IllegalTodoStateException.class,
                 () -> todoService.updateDescription(created.getId(), "Buy cheese")
             );
         }
@@ -670,7 +666,7 @@ class TodoServiceTest {
             todoService.markAsDone(created.getId());
 
             assertThrows(
-                InvalidTodoStatusTransitionException.class,
+                IllegalTodoStateException.class,
                 () -> todoService.updateDescription(created.getId(), "Updated")
             );
 

@@ -130,7 +130,7 @@ public class Todo {
 
     private static void requireNotDoneStatus(Todo todo) {
         if (todo.getStatus() != TodoStatus.NOT_DONE) {
-            throw new InvalidTodoStatusTransitionException(todo, TodoStatus.NOT_DONE);
+            throw new IllegalTodoStateException("Description cannot be modified after the todo is DONE.");
         }
     }
 }
