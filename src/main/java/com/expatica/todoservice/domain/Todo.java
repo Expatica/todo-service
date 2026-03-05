@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -43,7 +44,7 @@ public class Todo {
         Todo.requireFutureDueDate(dueAt);
 
         this.description = description;
-        this.dueAt = dueAt;
+        this.dueAt = dueAt.truncatedTo(ChronoUnit.MINUTES);
     }
 
     public void changeDescription(String description) {

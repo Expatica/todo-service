@@ -3,7 +3,6 @@ package com.expatica.todoservice.service;
 import com.expatica.todoservice.config.ValidationConfig;
 import com.expatica.todoservice.domain.*;
 import com.expatica.todoservice.repository.TodoRepository;
-import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -56,7 +56,7 @@ class TodoServiceTest {
 
             assertNotNull(created.getId());
             assertEquals("Buy milk", created.getDescription());
-            assertEquals(farFuture, created.getDueAt());
+            assertEquals(farFuture.truncatedTo(ChronoUnit.MINUTES), created.getDueAt());
             assertEquals(TodoStatus.NOT_DONE, created.getStatus());
             assertNotNull(created.getCreatedAt());
             assertNull(created.getCompletedAt());

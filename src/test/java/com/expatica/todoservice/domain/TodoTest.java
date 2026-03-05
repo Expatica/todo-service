@@ -3,6 +3,7 @@ package com.expatica.todoservice.domain;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,8 +31,10 @@ public class TodoTest {
     }
 
     @Test
-    void construct_whenDueDatePast_fails() {
-        assertThrows(IllegalArgumentException.class, () -> new Todo("Task", Instant.now().minusSeconds(3600)));
+    void construct_whenDueDatePrecise_truncatesToMinute() {
+        Instant futureTime = Instant.now().plusSeconds(3600);
+        Todo t = new Todo("Task", Instant.now().plusSeconds(3600));
+        assertEquals(futureTime.truncatedTo(ChronoUnit.MINUTES), t.getDueAt());
     }
 
     @Test

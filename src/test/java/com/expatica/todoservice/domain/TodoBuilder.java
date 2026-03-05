@@ -1,17 +1,18 @@
 package com.expatica.todoservice.domain;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
  * Builder for creating Todo instances with specific states that cannot be reached
  * through the public constructor of the Todo class.
  *
- * This builder allows creating Todo objects in various states including:
- * - PAST_DUE todos (with due dates in the past)
- * - DONE todos (with completion dates)
- * - Todos with custom IDs
- * - Todos with custom creation timestamps
+ * <p>This builder allows creating Todo objects in various states including:</p>
+ * - PAST_DUE todos (with due dates in the past) <br/>
+ * - DONE todos (with completion dates) <br/>
+ * - Todos with custom IDs <br/>
+ * - Todos with custom creation timestamps <br/>
  */
 public class TodoBuilder {
     private UUID id;
@@ -28,7 +29,7 @@ public class TodoBuilder {
      */
     public TodoBuilder(String description, Instant dueAt) {
         this.description = description;
-        this.dueAt = dueAt;
+        this.dueAt = dueAt.truncatedTo(ChronoUnit.MINUTES);
     }
 
     /**
