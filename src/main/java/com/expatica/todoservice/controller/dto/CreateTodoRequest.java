@@ -12,7 +12,7 @@ import java.time.Instant;
  */
 public record CreateTodoRequest(
         @NotBlank(message = "Description must not be blank")
-        @Size(min = 1, max = 255, message = "Description must not exceed 255 characters")
+        @Size(max = 255, message = "Description must not exceed 255 characters")
         String description,
 
         @NotNull(message = "Due date must not be null")
