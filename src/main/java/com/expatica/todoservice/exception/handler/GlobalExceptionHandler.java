@@ -1,4 +1,4 @@
-package com.expatica.todoservice.exception;
+package com.expatica.todoservice.exception.handler;
 
 import com.expatica.todoservice.domain.IllegalTodoStateException;
 import com.expatica.todoservice.domain.ImmutableTodoException;
