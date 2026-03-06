@@ -1,4 +1,7 @@
-package com.expatica.todoservice.domain;
+package com.expatica.todoservice.domain.exception;
+
+import com.expatica.todoservice.domain.Todo;
+import com.expatica.todoservice.domain.TodoStatus;
 
 public class InvalidTodoStatusTransitionException extends TodoDomainException {
 

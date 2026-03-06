@@ -1,5 +1,8 @@
 package com.expatica.todoservice.domain;
 
+import com.expatica.todoservice.domain.exception.IllegalTodoStateException;
+import com.expatica.todoservice.domain.exception.ImmutableTodoException;
+import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

@@ -2,7 +2,9 @@ package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.domain.Todo;
 import com.expatica.todoservice.domain.TodoStatus;
-import com.expatica.todoservice.exception.TodoNotFoundException;
+import com.expatica.todoservice.service.exception.TodoNotFoundException;
+import com.expatica.todoservice.domain.exception.ImmutableTodoException;
+import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.repository.TodoRepository;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -98,8 +100,8 @@ public class TodoService {
      * @param newDescription the new description
      * @return the updated todo
      * @throws java.util.NoSuchElementException if todo not found
-     * @throws com.expatica.todoservice.domain.ImmutableTodoException if todo is immutable
-     * @throws com.expatica.todoservice.domain.InvalidTodoStatusTransitionException if status does not allow update
+     * @throws ImmutableTodoException if todo is immutable
+     * @throws InvalidTodoStatusTransitionException if status does not allow update
      * @throws IllegalArgumentException if description validation fails
      */
     @Transactional
@@ -118,8 +120,8 @@ public class TodoService {
      * @param id the todo ID
      * @return the updated todo with status DONE
      * @throws java.util.NoSuchElementException if todo not found
-     * @throws com.expatica.todoservice.domain.ImmutableTodoException if todo is immutable
-     * @throws com.expatica.todoservice.domain.InvalidTodoStatusTransitionException if status does not allow transition
+     * @throws ImmutableTodoException if todo is immutable
+     * @throws InvalidTodoStatusTransitionException if status does not allow transition
      */
     @Transactional
     public Todo markAsDone(@NotNull UUID id) {
@@ -137,8 +139,8 @@ public class TodoService {
      * @param id the todo ID
      * @return the updated todo with status NOT_DONE
      * @throws java.util.NoSuchElementException if todo not found
-     * @throws com.expatica.todoservice.domain.ImmutableTodoException if due date has passed
-     * @throws com.expatica.todoservice.domain.InvalidTodoStatusTransitionException if status is not DONE
+     * @throws ImmutableTodoException if due date has passed
+     * @throws InvalidTodoStatusTransitionException if status is not DONE
      */
     @Transactional
     public Todo markAsNotDone(@NotNull UUID id) {

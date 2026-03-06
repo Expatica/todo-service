@@ -1,11 +1,11 @@
-package com.expatica.todoservice.exception.handler;
+package com.expatica.todoservice.controller;
 
-import com.expatica.todoservice.domain.IllegalTodoStateException;
-import com.expatica.todoservice.domain.ImmutableTodoException;
-import com.expatica.todoservice.domain.InvalidTodoStatusTransitionException;
-import com.expatica.todoservice.domain.TodoDomainException;
-import com.expatica.todoservice.exception.TodoNotFoundException;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.expatica.todoservice.controller.dto.ErrorResponse;
+import com.expatica.todoservice.domain.exception.IllegalTodoStateException;
+import com.expatica.todoservice.domain.exception.ImmutableTodoException;
+import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
+import com.expatica.todoservice.domain.exception.TodoDomainException;
+import com.expatica.todoservice.service.exception.TodoNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -145,20 +145,5 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    /**
-     * Standard error response format.
-     */
-    @Schema(description = "Standard error response")
-    public record ErrorResponse(
-            @Schema(description = "HTTP status code", example = "400")
-            int status,
-
-            @Schema(description = "Error message", example = "Description must not be blank")
-            String message,
-
-            @Schema(description = "Timestamp when the error occurred", example = "2026-03-04T10:00:00Z")
-            Instant timestamp
-    ) {
-    }
 }
 

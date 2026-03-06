@@ -2,7 +2,10 @@ package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.config.ValidationConfig;
 import com.expatica.todoservice.domain.*;
-import com.expatica.todoservice.exception.TodoNotFoundException;
+import com.expatica.todoservice.service.exception.TodoNotFoundException;
+import com.expatica.todoservice.domain.exception.IllegalTodoStateException;
+import com.expatica.todoservice.domain.exception.ImmutableTodoException;
+import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.repository.TodoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

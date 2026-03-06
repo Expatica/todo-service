@@ -1,4 +1,4 @@
-package com.expatica.todoservice.exception;
+package com.expatica.todoservice.service.exception;
 
 import java.util.UUID;
 

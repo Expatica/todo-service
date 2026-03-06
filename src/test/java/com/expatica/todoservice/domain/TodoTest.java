@@ -1,5 +1,7 @@
 package com.expatica.todoservice.domain;
 
+import com.expatica.todoservice.domain.exception.ImmutableTodoException;
+import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
