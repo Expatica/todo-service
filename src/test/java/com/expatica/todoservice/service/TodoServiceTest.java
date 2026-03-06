@@ -2,6 +2,7 @@ package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.config.ValidationConfig;
 import com.expatica.todoservice.domain.*;
+import com.expatica.todoservice.exception.TodoNotFoundException;
 import com.expatica.todoservice.repository.TodoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -161,7 +162,7 @@ class TodoServiceTest {
         void updateDescription_todoNotFound_fails() {
             UUID nonExistentId = UUID.randomUUID();
             assertThrows(
-                java.util.NoSuchElementException.class,
+                TodoNotFoundException.class,
                 () -> todoService.updateDescription(nonExistentId, "New description")
             );
         }
@@ -236,7 +237,7 @@ class TodoServiceTest {
         void markAsDone_todoNotFound_fails() {
             UUID nonExistentId = UUID.randomUUID();
             assertThrows(
-                java.util.NoSuchElementException.class,
+                TodoNotFoundException.class,
                 () -> todoService.markAsDone(nonExistentId)
             );
         }

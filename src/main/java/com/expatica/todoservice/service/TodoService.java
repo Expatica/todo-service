@@ -2,6 +2,7 @@ package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.domain.Todo;
 import com.expatica.todoservice.domain.TodoStatus;
+import com.expatica.todoservice.exception.TodoNotFoundException;
 import com.expatica.todoservice.repository.TodoRepository;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -37,7 +38,6 @@ import java.util.UUID;
 public class TodoService {
 
     private final TodoRepository todoRepository;
-    private static final String TODO_NOT_FOUND_MESSAGE_TEMPLATE = "Todo not found: %s";
 
     public TodoService(TodoRepository todoRepository) {
         this.todoRepository = todoRepository;
@@ -104,9 +104,7 @@ public class TodoService {
      */
     @Transactional
     public Todo updateDescription(@NotNull UUID id, @NotBlank @Size(min=1, max=255) String newDescription) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new java.util.NoSuchElementException(String.format(TODO_NOT_FOUND_MESSAGE_TEMPLATE, id)));
-
+        Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
         todo.changeDescription(newDescription);
         return todoRepository.save(todo);
     }
@@ -125,9 +123,7 @@ public class TodoService {
      */
     @Transactional
     public Todo markAsDone(@NotNull UUID id) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new java.util.NoSuchElementException(String.format(TODO_NOT_FOUND_MESSAGE_TEMPLATE, id)));
-
+        Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
         todo.markAsDone();
         return todoRepository.save(todo);
     }
@@ -146,9 +142,7 @@ public class TodoService {
      */
     @Transactional
     public Todo markAsNotDone(@NotNull UUID id) {
-        Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new java.util.NoSuchElementException(String.format(TODO_NOT_FOUND_MESSAGE_TEMPLATE, id)));
-
+        Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
         todo.markAsNotDone();
         return todoRepository.save(todo);
     }

@@ -4,6 +4,7 @@ import com.expatica.todoservice.domain.IllegalTodoStateException;
 import com.expatica.todoservice.domain.ImmutableTodoException;
 import com.expatica.todoservice.domain.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.domain.TodoDomainException;
+import com.expatica.todoservice.exception.TodoNotFoundException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,10 +106,10 @@ public class GlobalExceptionHandler {
      * Handles NoSuchElementException when a todo is not found.
      * Returns 404 Not Found status.
      */
-    @ExceptionHandler(java.util.NoSuchElementException.class)
+    @ExceptionHandler(TodoNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleNoSuchElementException(
-            java.util.NoSuchElementException ex,
+            TodoNotFoundException ex,
             WebRequest request
     ) {
         logger.warn("Resource not found: {}", ex.getMessage());
