@@ -1,13 +1,14 @@
 package com.expatica.todoservice.service;
 
+import com.expatica.todoservice.config.ClockConfiguration;
 import com.expatica.todoservice.config.ValidationConfig;
-import com.expatica.todoservice.domain.*;
-import com.expatica.todoservice.service.exception.TodoNotFoundException;
+import com.expatica.todoservice.domain.Todo;
+import com.expatica.todoservice.domain.TodoStatus;
 import com.expatica.todoservice.domain.exception.IllegalTodoStateException;
 import com.expatica.todoservice.domain.exception.ImmutableTodoException;
 import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.repository.TodoRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.expatica.todoservice.service.exception.TodoNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({TodoService.class, ValidationConfig.class})
+@Import({TodoService.class, ValidationConfig.class, ClockConfiguration.class})
 @ActiveProfiles("test")
 @DisplayName("TodoService Business Rules and State Transitions")
 class TodoServiceTest {
@@ -39,14 +40,9 @@ class TodoServiceTest {
     @Autowired
     private TodoRepository todoRepository;
 
-    private Instant futureTime;
-    private Instant pastTime;
-
-    @BeforeEach
-    void setUp() {
-        futureTime = Instant.now().plusSeconds(3600);
-        pastTime = Instant.now().minusSeconds(3600);
-    }
+    private final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
+    private final Instant futureTime = now.plusSeconds(86400);
+    private final Instant pastTime = now.minusSeconds(86400);
 
     @Nested
     @DisplayName("Create Todo")
@@ -55,12 +51,11 @@ class TodoServiceTest {
         @Test
         @DisplayName("should create todo with valid description and future due date")
         void createTodo_validInput_succeeds() {
-            Instant farFuture = Instant.now().plusSeconds(86400); // 1 day in future
-            Todo created = todoService.createTodo("Buy milk", farFuture);
+            Todo created = todoService.createTodo("Buy milk", futureTime);
 
             assertNotNull(created.getId());
             assertEquals("Buy milk", created.getDescription());
-            assertEquals(farFuture.truncatedTo(ChronoUnit.MINUTES), created.getDueAt());
+            assertEquals(futureTime.truncatedTo(ChronoUnit.MINUTES), created.getDueAt());
             assertEquals(TodoStatus.NOT_DONE, created.getStatus());
             assertNotNull(created.getCreatedAt());
             assertNull(created.getCompletedAt());
@@ -69,8 +64,7 @@ class TodoServiceTest {
         @Test
         @DisplayName("should persist todo to database")
         void createTodo_persistsToDatabase() {
-            Instant farFuture = Instant.now().plusSeconds(86400);
-            Todo created = todoService.createTodo("Buy milk", farFuture);
+            Todo created = todoService.createTodo("Buy milk", futureTime);
 
             assertTrue(todoRepository.existsById(created.getId()));
             Todo retrieved = todoRepository.findById(created.getId()).orElse(null);
@@ -195,10 +189,9 @@ class TodoServiceTest {
         @Test
         @DisplayName("should reject description update for PAST_DUE todo")
         void updateDescription_pastDue_forbidden() {
-            Todo pastDue = new TodoBuilder("Buy milk", pastTime)
-                    .withStatus(TodoStatus.PAST_DUE)
-                    .build();
+            Todo pastDue = new Todo("Buy milk", pastTime, pastTime);
             todoRepository.save(pastDue);
+            todoRepository.updateNotDoneToPastDue(now);
 
             assertThrows(
                 ImmutableTodoException.class,
@@ -270,10 +263,9 @@ class TodoServiceTest {
         @Test
         @DisplayName("should reject marking PAST_DUE todo as DONE (immutable)")
         void markAsDone_pastDue_forbidden() {
-            Todo pastDue = new TodoBuilder("Buy milk", pastTime)
-                    .withStatus(TodoStatus.PAST_DUE)
-                    .build();
+            Todo pastDue = new Todo("Buy milk", pastTime, pastTime);
             todoRepository.save(pastDue);
+            todoRepository.updateNotDoneToPastDue(now);
 
             assertThrows(
                 ImmutableTodoException.class,
@@ -320,11 +312,8 @@ class TodoServiceTest {
         @Test
         @DisplayName("should reject reopening DONE todo when due date has passed")
         void markAsNotDone_doneWithPastDue_forbidden() {
-            // Create a DONE todo with past due date using builder
-            Todo done = new TodoBuilder("Buy milk", pastTime)
-                    .withStatus(TodoStatus.DONE)
-                    .withCompletedAt(Instant.now().minusSeconds(60))
-                    .build();
+            Todo done = new Todo("Buy milk", pastTime, pastTime);
+            done.markAsDone(pastTime);
             todoRepository.save(done);
 
             assertThrows(
@@ -336,11 +325,8 @@ class TodoServiceTest {
         @Test
         @DisplayName("should prevent reopening expired tasks")
         void markAsNotDone_expiredTask_preventReopening() {
-            // Create an expired DONE todo
-            Todo expired = new TodoBuilder("Report due", pastTime)
-                    .withStatus(TodoStatus.DONE)
-                    .withCompletedAt(Instant.now().minusSeconds(100))
-                    .build();
+            Todo expired = new Todo("Report due", pastTime, pastTime);
+            expired.markAsDone(pastTime);
             todoRepository.save(expired);
 
             assertThrows(
@@ -373,10 +359,9 @@ class TodoServiceTest {
         @Test
         @DisplayName("should reject marking PAST_DUE todo as NOT_DONE (immutable)")
         void markAsNotDone_pastDue_forbidden() {
-            Todo pastDue = new TodoBuilder("Buy milk", pastTime)
-                    .withStatus(TodoStatus.PAST_DUE)
-                    .build();
+            Todo pastDue = new Todo("Buy milk", pastTime, pastTime);
             todoRepository.save(pastDue);
+            todoRepository.updateNotDoneToPastDue(now);
 
             // PAST_DUE status blocks the transition
             assertThrows(
@@ -413,10 +398,10 @@ class TodoServiceTest {
             Todo notDone = todoService.createTodo("Task 1", futureTime);
             Todo done = todoService.createTodo("Task 2", futureTime);
             todoService.markAsDone(done.getId());
-            Todo pastDue = new TodoBuilder("Task 3", pastTime)
-                    .withStatus(TodoStatus.PAST_DUE)
-                    .build();
+            
+            Todo pastDue = new Todo("Task 3", pastTime, pastTime);
             todoRepository.save(pastDue);
+            todoRepository.updateNotDoneToPastDue(now);
 
             Pageable pageable = PageRequest.of(0, 10);
             Page<Todo> result = todoService.getTodosByStatuses(
@@ -469,21 +454,15 @@ class TodoServiceTest {
         @DisplayName("should find NOT_DONE todos with past due date")
         void findNotDoneWithPastDueDate_returnsOverdueNotDone() {
             Todo notDoneWithFuture = todoService.createTodo("Task 1", futureTime);
-
-            // Create NOT_DONE todo with past due date using builder
-            Todo notDoneWithPast = new TodoBuilder("Task 2", pastTime)
-                    .withStatus(TodoStatus.NOT_DONE)
-                    .build();
+            
+            Todo notDoneWithPast = new Todo("Task 2", pastTime, pastTime);
             todoRepository.save(notDoneWithPast);
 
-            // Create DONE todo with past due date
-            Todo done = new TodoBuilder("Task 3", pastTime)
-                    .withStatus(TodoStatus.DONE)
-                    .withCompletedAt(Instant.now().minusSeconds(100))
-                    .build();
+            Todo done = new Todo("Task 3", pastTime, pastTime);
+            done.markAsDone(pastTime);
             todoRepository.save(done);
 
-            Collection<Todo> overdue = todoService.findNotDoneWithPastDueDate(Instant.now());
+            Collection<Todo> overdue = todoService.findNotDoneWithPastDueDate(now);
 
             assertEquals(1, overdue.size());
             assertTrue(overdue.stream()
@@ -501,13 +480,11 @@ class TodoServiceTest {
             todoService.markAsDone(done.getId());
 
             // Manually create a DONE todo with past due date
-            Todo donePastDue = new TodoBuilder("Old completed", pastTime)
-                    .withStatus(TodoStatus.DONE)
-                    .withCompletedAt(Instant.now().minusSeconds(200))
-                    .build();
+            Todo donePastDue = new Todo("Old completed", pastTime, pastTime);
+            donePastDue.markAsDone(pastTime);
             todoRepository.save(donePastDue);
 
-            Collection<Todo> overdue = todoService.findNotDoneWithPastDueDate(Instant.now());
+            Collection<Todo> overdue = todoService.findNotDoneWithPastDueDate(now);
 
             assertTrue(overdue.stream()
                     .noneMatch(t -> t.getStatus() == TodoStatus.DONE));
@@ -519,17 +496,12 @@ class TodoServiceTest {
             Todo future = todoService.createTodo("Future task", futureTime);
 
             // Create NOT_DONE todos with past due dates
-            Todo past1 = new TodoBuilder("Overdue 1", pastTime.minusSeconds(100))
-                    .withStatus(TodoStatus.NOT_DONE)
-                    .build();
-            todoRepository.save(past1);
+            Todo past1 = new Todo("Overdue 1",  pastTime, pastTime);
+            Todo past2 = new Todo("Overdue 2",  pastTime, pastTime);
 
-            Todo past2 = new TodoBuilder("Overdue 2", pastTime.minusSeconds(200))
-                    .withStatus(TodoStatus.NOT_DONE)
-                    .build();
-            todoRepository.save(past2);
+            todoRepository.saveAll(List.of(past1, past2));
 
-            int updated = todoService.transitionToPastDue(Instant.now());
+            int updated = todoService.transitionToPastDue(now);
 
             assertEquals(2, updated);
 
@@ -553,12 +525,10 @@ class TodoServiceTest {
             Todo done = todoService.createTodo("Completed", futureTime);
             todoService.markAsDone(done.getId());
 
-            Todo notDonePast = new TodoBuilder("Overdue", pastTime)
-                    .withStatus(TodoStatus.NOT_DONE)
-                    .build();
+            Todo notDonePast = new Todo("Overdue", pastTime, pastTime);
             todoRepository.save(notDonePast);
 
-            int updated = todoService.transitionToPastDue(Instant.now());
+            int updated = todoService.transitionToPastDue(now);
 
             assertEquals(1, updated);
 
@@ -574,7 +544,7 @@ class TodoServiceTest {
             todoService.createTodo("Task 1", futureTime);
             todoService.createTodo("Task 2", futureTime);
 
-            int updated = todoService.transitionToPastDue(Instant.now());
+            int updated = todoService.transitionToPastDue(now);
 
             assertEquals(0, updated);
         }
@@ -582,13 +552,11 @@ class TodoServiceTest {
         @Test
         @DisplayName("should be idempotent - running twice has same effect")
         void transitionToPastDue_idempotent() {
-            Todo past = new TodoBuilder("Overdue", pastTime)
-                    .withStatus(TodoStatus.NOT_DONE)
-                    .build();
+            Todo past = new Todo("Overdue", pastTime, pastTime);
             todoRepository.save(past);
 
-            int updated1 = todoService.transitionToPastDue(Instant.now());
-            int updated2 = todoService.transitionToPastDue(Instant.now());
+            int updated1 = todoService.transitionToPastDue(now);
+            int updated2 = todoService.transitionToPastDue(now);
 
             assertEquals(1, updated1);
             assertEquals(0, updated2); // Second run should update nothing
@@ -609,9 +577,9 @@ class TodoServiceTest {
         @Test
         @DisplayName("NOT_DONE -> PAST_DUE: allowed via scheduler only")
         void notDone_to_pastDue_allowedViaScheduler() {
-            Todo todo = new TodoBuilder("Task", pastTime).build();
+            Todo todo = new Todo("Task", pastTime, pastTime);
             todoRepository.save(todo);
-            int updated = todoService.transitionToPastDue(Instant.now());
+            int updated = todoService.transitionToPastDue(now);
             assertEquals(1, updated);
         }
 
@@ -626,10 +594,8 @@ class TodoServiceTest {
         @Test
         @DisplayName("DONE -> NOT_DONE: forbidden if past due date")
         void done_to_notDone_forbiddenIfPastDue() {
-            Todo done = new TodoBuilder("Task", pastTime)
-                    .withStatus(TodoStatus.DONE)
-                    .withCompletedAt(Instant.now().minusSeconds(100))
-                    .build();
+            Todo done = new Todo("Task", pastTime, pastTime);
+            done.markAsDone(pastTime);
             todoRepository.save(done);
 
             assertThrows(ImmutableTodoException.class, () -> todoService.markAsNotDone(done.getId()));
@@ -647,10 +613,9 @@ class TodoServiceTest {
         @Test
         @DisplayName("PAST_DUE -> any state: forbidden (immutable)")
         void pastDue_to_any_forbidden() {
-            Todo pastDue = new TodoBuilder("Task", pastTime)
-                    .withStatus(TodoStatus.PAST_DUE)
-                    .build();
+            Todo pastDue = new Todo("Task", pastTime, pastTime);
             todoRepository.save(pastDue);
+            todoRepository.updateNotDoneToPastDue(now);
 
             assertThrows(ImmutableTodoException.class, () -> todoService.markAsDone(pastDue.getId()));
             assertThrows(ImmutableTodoException.class, () -> todoService.markAsNotDone(pastDue.getId()));
@@ -683,11 +648,11 @@ class TodoServiceTest {
         @Test
         @DisplayName("should ensure bulk transition is atomic")
         void transitionToPastDue_atomic() {
-            Todo past1 = new TodoBuilder("Overdue 1", pastTime).build();
-            Todo past2 = new TodoBuilder("Overdue 2", pastTime).build();
+            Todo past1 = new Todo("Overdue 1", pastTime, pastTime);
+            Todo past2 = new Todo("Overdue 2", pastTime, pastTime);
             todoRepository.saveAll(List.of(past1, past2));
 
-            int updated = todoService.transitionToPastDue(Instant.now());
+            int updated = todoService.transitionToPastDue(now);
 
             assertEquals(2, updated);
             // Verify both were updated atomically

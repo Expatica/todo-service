@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
@@ -30,8 +31,8 @@ import java.util.UUID;
  * - Updating todo descriptions <br/>
  * - Marking todos as done or not done <br/>
  * - Transitioning todos to PAST_DUE status <br/>
- *  </p>
- *
+ * </p>
+ * <p>
  * All operations maintain transactional consistency and enforce domain rules
  * defined in the Todo aggregate.
  */
@@ -40,9 +41,11 @@ import java.util.UUID;
 public class TodoService {
 
     private final TodoRepository todoRepository;
+    private final Clock clock;
 
-    public TodoService(TodoRepository todoRepository) {
+    public TodoService(TodoRepository todoRepository, Clock clock) {
         this.todoRepository = todoRepository;
+        this.clock = clock;
     }
 
     /**
@@ -53,13 +56,16 @@ public class TodoService {
      * - dueAt is not null and must be in the future
      *
      * @param description the todo description (not blank, max 255 chars)
-     * @param dueAt the due date (must be in the future)
+     * @param dueAt       the due date (must be in the future)
      * @return the created todo
      * @throws IllegalArgumentException if description is blank or future validation fails
      */
     @Transactional
-    public Todo createTodo(@NotBlank @Size(min=1, max=255) String description, @NotNull @Future Instant dueAt) {
-        Todo todo = new Todo(description, dueAt);
+    public Todo createTodo(
+            @NotBlank @Size(min = 1, max = 255) String description,
+            @NotNull @Future Instant dueAt
+    ) {
+        Todo todo = new Todo(description, dueAt, Instant.now(clock));
         return todoRepository.saveAndFlush(todo);
     }
 
@@ -96,18 +102,21 @@ public class TodoService {
      * <p>Validates:</p>
      * - description is not blank and max 255 characters
      *
-     * @param id the todo ID
+     * @param id             the todo ID
      * @param newDescription the new description
      * @return the updated todo
-     * @throws java.util.NoSuchElementException if todo not found
-     * @throws ImmutableTodoException if todo is immutable
+     * @throws java.util.NoSuchElementException     if todo not found
+     * @throws ImmutableTodoException               if todo is immutable
      * @throws InvalidTodoStatusTransitionException if status does not allow update
-     * @throws IllegalArgumentException if description validation fails
+     * @throws IllegalArgumentException             if description validation fails
      */
     @Transactional
-    public Todo updateDescription(@NotNull UUID id, @NotBlank @Size(min=1, max=255) String newDescription) {
+    public Todo updateDescription(
+            @NotNull UUID id,
+            @NotBlank @Size(min = 1, max = 255) String newDescription
+    ) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.changeDescription(newDescription);
+        todo.changeDescription(newDescription, Instant.now(clock));
         return todoRepository.save(todo);
     }
 
@@ -119,14 +128,14 @@ public class TodoService {
      *
      * @param id the todo ID
      * @return the updated todo with status DONE
-     * @throws java.util.NoSuchElementException if todo not found
-     * @throws ImmutableTodoException if todo is immutable
+     * @throws java.util.NoSuchElementException     if todo not found
+     * @throws ImmutableTodoException               if todo is immutable
      * @throws InvalidTodoStatusTransitionException if status does not allow transition
      */
     @Transactional
     public Todo markAsDone(@NotNull UUID id) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.markAsDone();
+        todo.markAsDone(Instant.now(clock));
         return todoRepository.save(todo);
     }
 
@@ -138,14 +147,14 @@ public class TodoService {
      *
      * @param id the todo ID
      * @return the updated todo with status NOT_DONE
-     * @throws java.util.NoSuchElementException if todo not found
-     * @throws ImmutableTodoException if due date has passed
+     * @throws java.util.NoSuchElementException     if todo not found
+     * @throws ImmutableTodoException               if due date has passed
      * @throws InvalidTodoStatusTransitionException if status is not DONE
      */
     @Transactional
     public Todo markAsNotDone(@NotNull UUID id) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.markAsNotDone();
+        todo.markAsNotDone(Instant.now(clock));
         return todoRepository.save(todo);
     }
 

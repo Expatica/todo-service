@@ -47,8 +47,7 @@ public interface TodoRepository extends JpaRepository<Todo, UUID> {
      * @param now Current instant in UTC
      * @return Number of todos updated
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Todo t SET t.status = 'PAST_DUE' WHERE t.status = 'NOT_DONE' AND t.dueAt < :now")
     int updateNotDoneToPastDue(@Param("now") Instant now);
 }
-

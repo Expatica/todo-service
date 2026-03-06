@@ -8,6 +8,7 @@ import com.expatica.todoservice.domain.exception.TodoDomainException;
 import com.expatica.todoservice.service.exception.TodoNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.ObjectError;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
@@ -30,6 +32,9 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    
+    @Autowired
+    private Clock clock;
 
     /**
      * Handles domain-level exceptions (ImmutableTodoException, InvalidTodoStatusTransitionException).
@@ -46,7 +51,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.FORBIDDEN.value(),
                 ex.getMessage(),
-                Instant.now()
+                Instant.now(clock)
         );
 
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
@@ -75,7 +80,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 message,
-                Instant.now()
+                Instant.now(clock)
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -96,7 +101,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage(),
-                Instant.now()
+                Instant.now(clock)
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -117,7 +122,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
-                Instant.now()
+                Instant.now(clock)
         );
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -139,7 +144,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "An unexpected error occurred",
-                Instant.now()
+                Instant.now(clock)
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);

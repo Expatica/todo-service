@@ -1,7 +1,6 @@
 package com.expatica.todoservice.repository;
 
 import com.expatica.todoservice.domain.Todo;
-import com.expatica.todoservice.domain.TodoBuilder;
 import com.expatica.todoservice.domain.TodoStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
@@ -26,18 +26,20 @@ public class TodoRepositoryTest {
     @Autowired
     private TodoRepository todoRepository;
 
+    private Instant now;
     private Instant futureTime;
     private Instant pastTime;
 
     @BeforeEach
     void setUp() {
-        futureTime = Instant.now().plusSeconds(3600);
-        pastTime = Instant.now().minusSeconds(3600);
+        now =  Instant.now().truncatedTo(ChronoUnit.MINUTES);
+        futureTime = now.plusSeconds(3600);
+        pastTime = now.minusSeconds(3600);
     }
 
     @Test
     void saveAndFindById_createsAndRetrieves() {
-        Todo todo = new Todo("Test task", futureTime);
+        Todo todo = new Todo("Test task", futureTime, now);
         Todo saved = todoRepository.saveAndFlush(todo);
 
         assertNotNull(saved.getId());
@@ -52,8 +54,8 @@ public class TodoRepositoryTest {
 
     @Test
     void saveAndFindById_updatesAndRetrieves() {
-        Todo todo = new Todo("Test task", futureTime);
-        todo.markAsDone();
+        Todo todo = new Todo("Test task", futureTime, now);
+        todo.markAsDone(now);
         Todo saved = todoRepository.save(todo);
 
         Todo found = todoRepository.findById(saved.getId()).orElse(null);
@@ -61,8 +63,8 @@ public class TodoRepositoryTest {
         assertNotNull(found);
         assertNotNull(found.getCompletedAt());
 
-        found.markAsNotDone();
-        found.changeDescription("new description");
+        found.markAsNotDone(now);
+        found.changeDescription("new description", now);
         saved = todoRepository.save(found);
 
         found = todoRepository.findById(saved.getId()).orElse(null);
@@ -74,14 +76,14 @@ public class TodoRepositoryTest {
 
     @Test
     void findByStatusIn_filtersCorrectly() {
-        Todo todo1 = new Todo("Task 1", futureTime);
-        Todo todo2 = new Todo("Task 2", futureTime);
-        Todo todo3 = new Todo("Task 3", futureTime);
+        Todo todo1 = new Todo("Task 1", futureTime, now);
+        Todo todo2 = new Todo("Task 2", futureTime, now);
+        Todo todo3 = new Todo("Task 3", futureTime, now);
 
         todoRepository.saveAll(List.of(todo1, todo2, todo3));
 
         // Mark one as done
-        todo1.markAsDone();
+        todo1.markAsDone(now);
         todoRepository.save(todo1);
 
         Pageable pageable = PageRequest.of(0, 10);
@@ -94,13 +96,14 @@ public class TodoRepositoryTest {
 
     @Test
     void findByStatusIn_multipleStatuses() {
-        Todo notDone = new Todo("Task 1", futureTime);
-        Todo done = new Todo("Task 2", futureTime);
-        Todo pastDue = new TodoBuilder("Task 3", pastTime).withStatus(TodoStatus.PAST_DUE).build();
+        Todo notDone = new Todo("Task 1", futureTime, now);
+        Todo done = new Todo("Task 2", futureTime, now);
+        Todo pastDue = new Todo("Task 3", pastTime, pastTime);
 
         todoRepository.saveAll(List.of(notDone, done, pastDue));
+        todoRepository.updateNotDoneToPastDue(now);
 
-        done.markAsDone();
+        done.markAsDone(now);
         todoRepository.save(done);
 
         Pageable pageable = PageRequest.of(0, 10);
@@ -117,7 +120,7 @@ public class TodoRepositoryTest {
     @Test
     void findByStatusIn_withPaging() {
         for (int i = 0; i < 25; i++) {
-            todoRepository.save(new Todo("Task " + i, futureTime));
+            todoRepository.save(new Todo("Task " + i, futureTime, now));
         }
 
         Pageable page1 = PageRequest.of(0, 10, Sort.by("description").ascending());
@@ -131,9 +134,9 @@ public class TodoRepositoryTest {
 
     @Test
     void findByStatusIn_withSorting() {
-        todoRepository.save(new Todo("Alpha task", futureTime));
-        todoRepository.save(new Todo("Beta task", futureTime));
-        todoRepository.save(new Todo("Gamma task", futureTime));
+        todoRepository.save(new Todo("Alpha task", futureTime, now));
+        todoRepository.save(new Todo("Beta task", futureTime, now));
+        todoRepository.save(new Todo("Gamma task", futureTime, now));
 
         Pageable pageable = PageRequest.of(0, 10, Sort.by("description").ascending());
         Page<Todo> result = todoRepository.findByStatusIn(List.of(TodoStatus.NOT_DONE), pageable);
@@ -148,41 +151,35 @@ public class TodoRepositoryTest {
 
     @Test
     void findNotDoneWithPastDueDate_returnsOnlyNotDonePastDue() {
-        Todo notDoneFuture = new Todo("Future task", futureTime);
-        Todo notDonePast = new TodoBuilder("Past task", pastTime).build();
-        Todo doneFuture = new Todo("Done future", futureTime);
-        Todo donePast = new TodoBuilder("Done past", pastTime)
-                .withCompletedAt(pastTime)
-                .withStatus(TodoStatus.DONE)
-                .build();
+        Todo notDoneFuture = new Todo("Future task", futureTime, pastTime);
+        Todo notDonePast = new Todo("Past task", pastTime, pastTime);
+        Todo doneFuture = new Todo("Done future", futureTime, pastTime);
+        Todo donePast = new Todo("Done past", pastTime, pastTime);
 
+        doneFuture.markAsDone(pastTime);
+        donePast.markAsDone(pastTime);
         todoRepository.saveAll(List.of(notDoneFuture, notDonePast, doneFuture, donePast));
 
-        doneFuture.markAsDone();
-        todoRepository.saveAll(List.of(doneFuture, donePast));
-
-        Instant now = Instant.now();
         Collection<Todo> result = todoRepository.findNotDoneWithPastDueDate(now);
 
         assertEquals(1, result.size());
         Todo found = result.iterator().next();
         assertEquals("Past task", found.getDescription());
-        assertEquals(TodoStatus.PAST_DUE, found.getStatus());
+        assertEquals(TodoStatus.NOT_DONE, found.getStatus());
         assertTrue(found.getDueAt().isBefore(now));
     }
 
     @Test
     void updateNotDoneToPastDue_transitionsCorrectly() {
-        Todo notDoneFuture = new Todo("Future task", futureTime);
-        Todo notDonePast = new TodoBuilder("Past task", pastTime).build();
-        Todo done = new Todo("Done task", futureTime);
+        Todo notDoneFuture = new Todo("Future task", futureTime, pastTime);
+        Todo notDonePast = new Todo("Past task", pastTime, pastTime);
+        Todo done = new Todo("Done task", futureTime, pastTime);
 
         todoRepository.saveAll(List.of(notDoneFuture, notDonePast, done));
 
-        done.markAsDone();
+        done.markAsDone(now);
         todoRepository.save(done);
 
-        Instant now = Instant.now();
         int updated = todoRepository.updateNotDoneToPastDue(now);
 
         assertEquals(1, updated);
@@ -199,10 +196,9 @@ public class TodoRepositoryTest {
     @Test
     void updateNotDoneToPastDue_multipleUpdates() {
         for (int i = 0; i < 5; i++) {
-            todoRepository.save(new TodoBuilder("Task " + i, pastTime).build());
+            todoRepository.save(new Todo("Task " + i, pastTime, pastTime));
         }
 
-        Instant now = Instant.now();
         int updated = todoRepository.updateNotDoneToPastDue(now);
 
         assertEquals(5, updated);
@@ -217,7 +213,7 @@ public class TodoRepositoryTest {
 
     @Test
     void delete_removesCorrectly() {
-        Todo todo = new Todo("Task to delete", futureTime);
+        Todo todo = new Todo("Task to delete", futureTime, pastTime);
         Todo saved = todoRepository.save(todo);
 
         assertTrue(todoRepository.existsById(saved.getId()));

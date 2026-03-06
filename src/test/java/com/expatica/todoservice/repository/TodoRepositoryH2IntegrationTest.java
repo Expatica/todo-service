@@ -1,7 +1,6 @@
 package com.expatica.todoservice.repository;
 
 import com.expatica.todoservice.domain.Todo;
-import com.expatica.todoservice.domain.TodoBuilder;
 import com.expatica.todoservice.domain.TodoStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +32,9 @@ public class TodoRepositoryH2IntegrationTest {
 
     @Autowired
     private DataSource dataSource;
+
+    private final Instant now = Instant.now();
+    private final Instant future = now.plusSeconds(3600);
 
     @Test
     void verifyH2DatabaseConnection() {
@@ -85,8 +87,8 @@ public class TodoRepositoryH2IntegrationTest {
 
                     // Verify expected columns exist
                     assertTrue(
-                        columnName.matches("(ID|DESCRIPTION|DUE_AT|CREATED_AT|COMPLETED_AT|STATUS)"),
-                        "Unexpected column: " + columnName
+                            columnName.matches("(ID|DESCRIPTION|DUE_AT|CREATED_AT|COMPLETED_AT|STATUS)"),
+                            "Unexpected column: " + columnName
                     );
                 }
 
@@ -98,8 +100,7 @@ public class TodoRepositoryH2IntegrationTest {
     @Test
     void verifyDataPersistenceToH2() {
         // Create and save a Todo
-        Instant future = Instant.now().plusSeconds(3600);
-        Todo todo = new Todo("H2 Integration Test", future);
+        Todo todo = new Todo("H2 Integration Test", future, now);
 
         Todo saved = todoRepository.save(todo);
         assertNotNull(saved.getId(), "Saved Todo should have an ID");
@@ -125,11 +126,9 @@ public class TodoRepositoryH2IntegrationTest {
 
     @Test
     void verifyH2TransactionSupport() {
-        Instant future = Instant.now().plusSeconds(3600);
-
         // Save multiple todos in a transaction
-        Todo todo1 = todoRepository.save(new Todo("Todo 1", future));
-        Todo todo2 = todoRepository.save(new Todo("Todo 2", future));
+        Todo todo1 = todoRepository.save(new Todo("Todo 1", future, now));
+        Todo todo2 = todoRepository.save(new Todo("Todo 2", future, now));
 
         todoRepository.flush();
 
@@ -143,8 +142,7 @@ public class TodoRepositoryH2IntegrationTest {
 
     @Test
     void verifyH2SupportsUpdates() {
-        Instant future = Instant.now().plusSeconds(3600);
-        Todo todo = new Todo("Original description", future);
+        Todo todo = new Todo("Original description", future, now);
         Todo saved = todoRepository.save(todo);
 
         todoRepository.flush();
@@ -153,7 +151,7 @@ public class TodoRepositoryH2IntegrationTest {
         Todo retrieved = todoRepository.findById(saved.getId()).orElse(null);
         assertNotNull(retrieved);
 
-        retrieved.changeDescription("Updated description");
+        retrieved.changeDescription("Updated description", now);
         todoRepository.save(retrieved);
         todoRepository.flush();
 
@@ -165,8 +163,7 @@ public class TodoRepositoryH2IntegrationTest {
 
     @Test
     void verifyH2SupportsDeletes() {
-        Instant future = Instant.now().plusSeconds(3600);
-        Todo todo = new Todo("To be deleted", future);
+        Todo todo = new Todo("To be deleted", future, now);
         Todo saved = todoRepository.save(todo);
 
         todoRepository.flush();
@@ -186,7 +183,7 @@ public class TodoRepositoryH2IntegrationTest {
         // and each test method gets a transaction that's rolled back
 
         Instant future = Instant.now().plusSeconds(3600);
-        todoRepository.save(new Todo("Test data", future));
+        todoRepository.save(new Todo("Test data", future, now));
 
         assertEquals(1, todoRepository.count());
         // After test completes, transaction rolls back and next test starts fresh
@@ -194,13 +191,9 @@ public class TodoRepositoryH2IntegrationTest {
 
     @Test
     void verifyH2CustomQueryExecution() {
-        Instant now = Instant.now();
-        Instant future = now.plusSeconds(3600);
-        Instant past = now.minusSeconds(3600);
-
         // Create todos with various states
-        todoRepository.save(new Todo("Future task", future));
-        todoRepository.save(new TodoBuilder("Past task", past).build());
+        todoRepository.save(new Todo("Future task", future, now));
+        todoRepository.save(new Todo("Past task", now.minusSeconds(3600), now.minusSeconds(3600)));
 
         todoRepository.flush();
 

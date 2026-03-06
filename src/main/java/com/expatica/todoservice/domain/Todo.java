@@ -38,21 +38,22 @@ public class Todo {
 
     public Todo(
             String description,
-            Instant dueAt
+            Instant dueAt,
+            Instant now
     ) {
         // Validate description
         Todo.requireNonBlankDescriptionUnder255Characters(description);
 
         // Validate dueAt
-        Todo.requireFutureDueDate(dueAt);
+        Todo.requireFutureDueDate(dueAt, now);
 
         this.description = description;
         this.dueAt = dueAt.truncatedTo(ChronoUnit.MINUTES);
     }
 
-    public void changeDescription(String description) {
+    public void changeDescription(String description, Instant now) {
         Todo.requireNonBlankDescriptionUnder255Characters(description);
-        Todo.requireFutureDueDateToModify(this);
+        Todo.requireFutureDueDateToModify(this, now);
         Todo.requireNotDoneStatus(this);
         this.description = description;
     }
@@ -78,22 +79,19 @@ public class Todo {
     }
 
     public TodoStatus getStatus() {
-        if (this.status == TodoStatus.NOT_DONE && this.dueAt.isBefore(Instant.now())) {
-            this.status = TodoStatus.PAST_DUE;
-        }
         return this.status;
     }
 
-    public void markAsDone() {
-        Todo.requireFutureDueDateToModify(this);
+    public void markAsDone(Instant now) {
+        Todo.requireFutureDueDateToModify(this, now);
         Todo.requireAllowedStatusTransition(this, TodoStatus.DONE);
 
         this.status = TodoStatus.DONE;
-        this.completedAt = Instant.now();
+        this.completedAt = now;
     }
 
-    public void markAsNotDone() {
-        Todo.requireFutureDueDateToModify(this);
+    public void markAsNotDone(Instant now) {
+        Todo.requireFutureDueDateToModify(this, now);
         Todo.requireAllowedStatusTransition(this, TodoStatus.NOT_DONE);
 
         this.status = TodoStatus.NOT_DONE;
@@ -107,18 +105,18 @@ public class Todo {
         }
     }
 
-    private static void requireFutureDueDate(Instant dueAt) {
+    private static void requireFutureDueDate(Instant dueAt, Instant now) {
         if (dueAt == null) {
             throw new IllegalArgumentException("Due date must not be null");
         }
 
-        if (dueAt.isBefore(Instant.now())) {
+        if (dueAt.isBefore(now)) {
             throw new IllegalArgumentException("Due date must be in the future");
         }
     }
 
-    private static void requireFutureDueDateToModify(Todo todo) {
-        if (todo.dueAt.isBefore(Instant.now())) {
+    private static void requireFutureDueDateToModify(Todo todo, Instant now) {
+        if (todo.dueAt.isBefore(now)) {
             throw new ImmutableTodoException(todo.getId());
         }
     }

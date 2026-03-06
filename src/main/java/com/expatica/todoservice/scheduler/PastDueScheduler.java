@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /**
@@ -35,9 +36,11 @@ public class PastDueScheduler {
     private static final Logger logger = LoggerFactory.getLogger(PastDueScheduler.class);
 
     private final TodoRepository todoRepository;
+    private final Clock clock;
 
-    public PastDueScheduler(TodoRepository todoRepository) {
+    public PastDueScheduler(TodoRepository todoRepository, Clock clock) {
         this.todoRepository = todoRepository;
+        this.clock = clock;
     }
 
     /**
@@ -49,7 +52,7 @@ public class PastDueScheduler {
     @Scheduled(fixedRate = 60000, initialDelay = 10000)
     @Transactional
     public void transitionNotDoneToPastDue() {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         int updated = todoRepository.updateNotDoneToPastDue(now);
 
         if (updated > 0) {
