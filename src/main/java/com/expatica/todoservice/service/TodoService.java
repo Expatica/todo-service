@@ -2,10 +2,11 @@ package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.domain.Todo;
 import com.expatica.todoservice.domain.TodoStatus;
-import com.expatica.todoservice.service.exception.TodoNotFoundException;
 import com.expatica.todoservice.domain.exception.ImmutableTodoException;
 import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.repository.TodoRepository;
+import com.expatica.todoservice.service.exception.TodoNotFoundException;
+import com.expatica.todoservice.util.TimeProvider;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
@@ -41,11 +41,11 @@ import java.util.UUID;
 public class TodoService {
 
     private final TodoRepository todoRepository;
-    private final Clock clock;
+    private final TimeProvider timeProvider;
 
-    public TodoService(TodoRepository todoRepository, Clock clock) {
+    public TodoService(TodoRepository todoRepository, TimeProvider timeProvider) {
         this.todoRepository = todoRepository;
-        this.clock = clock;
+        this.timeProvider = timeProvider;
     }
 
     /**
@@ -65,7 +65,7 @@ public class TodoService {
             @NotBlank @Size(min = 1, max = 255) String description,
             @NotNull @Future Instant dueAt
     ) {
-        Todo todo = new Todo(description, dueAt, Instant.now(clock));
+        Todo todo = new Todo(description, dueAt, timeProvider.now());
         return todoRepository.saveAndFlush(todo);
     }
 
@@ -116,7 +116,7 @@ public class TodoService {
             @NotBlank @Size(min = 1, max = 255) String newDescription
     ) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.changeDescription(newDescription, Instant.now(clock));
+        todo.changeDescription(newDescription, timeProvider.now());
         return todoRepository.save(todo);
     }
 
@@ -135,7 +135,7 @@ public class TodoService {
     @Transactional
     public Todo markAsDone(@NotNull UUID id) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.markAsDone(Instant.now(clock));
+        todo.markAsDone(timeProvider.now());
         return todoRepository.save(todo);
     }
 
@@ -154,7 +154,7 @@ public class TodoService {
     @Transactional
     public Todo markAsNotDone(@NotNull UUID id) {
         Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFoundException(id));
-        todo.markAsNotDone(Instant.now(clock));
+        todo.markAsNotDone(timeProvider.now());
         return todoRepository.save(todo);
     }
 

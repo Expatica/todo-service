@@ -1,5 +1,6 @@
 package com.expatica.todoservice.controller;
 
+import com.expatica.todoservice.config.TestClockConfiguration;
 import com.expatica.todoservice.controller.dto.CreateTodoRequest;
 import com.expatica.todoservice.controller.dto.TodoResponse;
 import com.expatica.todoservice.domain.TodoStatus;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests HTTP endpoints and DTO mapping.
  */
 @SpringBootTest
+@Import(TestClockConfiguration.class)
 @AutoConfigureJsonTesters
 class TodoControllerTest {
 

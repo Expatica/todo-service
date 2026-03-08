@@ -1,6 +1,7 @@
 package com.expatica.todoservice.service;
 
 import com.expatica.todoservice.config.ClockConfiguration;
+import com.expatica.todoservice.config.TestClockConfiguration;
 import com.expatica.todoservice.config.ValidationConfig;
 import com.expatica.todoservice.domain.Todo;
 import com.expatica.todoservice.domain.TodoStatus;
@@ -9,6 +10,8 @@ import com.expatica.todoservice.domain.exception.ImmutableTodoException;
 import com.expatica.todoservice.domain.exception.InvalidTodoStatusTransitionException;
 import com.expatica.todoservice.repository.TodoRepository;
 import com.expatica.todoservice.service.exception.TodoNotFoundException;
+import com.expatica.todoservice.util.TimeProvider;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,7 +32,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({TodoService.class, ValidationConfig.class, ClockConfiguration.class})
+@Import({TestClockConfiguration.class, ClockConfiguration.class, TodoService.class, ValidationConfig.class})
 @ActiveProfiles("test")
 @DisplayName("TodoService Business Rules and State Transitions")
 class TodoServiceTest {
@@ -40,9 +43,19 @@ class TodoServiceTest {
     @Autowired
     private TodoRepository todoRepository;
 
-    private final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
-    private final Instant futureTime = now.plusSeconds(86400);
-    private final Instant pastTime = now.minusSeconds(86400);
+    @Autowired
+    private TimeProvider timeProvider;
+
+    private Instant now;
+    private Instant futureTime;
+    private Instant pastTime;
+
+    @BeforeEach
+    void setUp() {
+        now = timeProvider.now().truncatedTo(ChronoUnit.MINUTES);
+        futureTime = now.plusSeconds(86400);
+        pastTime = now.minusSeconds(86400);
+    }
 
     @Nested
     @DisplayName("Create Todo")

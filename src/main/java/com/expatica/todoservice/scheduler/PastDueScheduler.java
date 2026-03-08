@@ -1,14 +1,12 @@
 package com.expatica.todoservice.scheduler;
 
 import com.expatica.todoservice.repository.TodoRepository;
+import com.expatica.todoservice.util.TimeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Clock;
-import java.time.Instant;
 
 /**
  * PastDueScheduler is responsible for actively transitioning TODO items from NOT_DONE
@@ -36,11 +34,11 @@ public class PastDueScheduler {
     private static final Logger logger = LoggerFactory.getLogger(PastDueScheduler.class);
 
     private final TodoRepository todoRepository;
-    private final Clock clock;
+    private final TimeProvider timeProvider;
 
-    public PastDueScheduler(TodoRepository todoRepository, Clock clock) {
+    public PastDueScheduler(TodoRepository todoRepository, TimeProvider timeProvider) {
         this.todoRepository = todoRepository;
-        this.clock = clock;
+        this.timeProvider = timeProvider;
     }
 
     /**
@@ -52,8 +50,7 @@ public class PastDueScheduler {
     @Scheduled(fixedRate = 60000, initialDelay = 10000)
     @Transactional
     public void transitionNotDoneToPastDue() {
-        Instant now = Instant.now(clock);
-        int updated = todoRepository.updateNotDoneToPastDue(now);
+        int updated = todoRepository.updateNotDoneToPastDue(timeProvider.now());
 
         if (updated > 0) {
             logger.info("Transitioned {} TODO(s) from NOT_DONE to PAST_DUE", updated);

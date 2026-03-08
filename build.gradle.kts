@@ -46,3 +46,8 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.test {
+    val activeProfile = project.findProperty("springProfile") as String? ?: "test"
+    systemProperty("spring.profiles.active", activeProfile)
+}
