@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="datetime-local"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #bfdbfe;
+        }
+
+        .todo-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .todo-item.done {
+            opacity: 0.7;
+            background: #f0fdf4;
+        }
+
+        .todo-item.past-due {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .todo-title {
+            font-weight: 600;
+            color: #1f2937;
+            word-break: break-word;
+            flex: 1;
+        }
+
+        .todo-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-not-done {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-done {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-past-due {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        .todo-meta {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .todo-actions button {
+            flex: 0 1 auto;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-checkbox input {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            min-width: 35px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📝 Todo Service</h1>
+            <p class="subtitle">A simple todo management application with state transitions</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Create Todo Section -->
+            <div class="card">
+                <h2>✨ Create New Todo</h2>
+
+                <div id="createAlert" class="alert"></div>
+
+                <form id="createTodoForm">
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input
+                            type="text"
+                            id="description"
+                            placeholder="What needs to be done?"
+                            maxlength="255"
+                            required
+                        />
+                        <small style="color: #999; font-size: 12px;">Max 255 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input
+                            type="datetime-local"
+                            id="dueDate"
+                            required
+                        />
+                        <small style="color: #999; font-size: 12px;">Must be in the future</small>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Create Todo</button>
+                        <button type="reset" class="btn-secondary">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="card">
+                <h2>🔍 Filters & Display</h2>
+
+                <div class="form-group">
+                    <label>Status Filter</label>
+                    <div class="filter-group">
+                        <div class="filter-checkbox">
+                            <input type="checkbox" id="filterNotDone" value="NOT_DONE" checked />
+                            <label for="filterNotDone" style="margin: 0; font-weight: normal;">Not Done</label>
+                        </div>
+                        <div class="filter-checkbox">
+                            <input type="checkbox" id="filterDone" value="DONE" />
+                            <label for="filterDone" style="margin: 0; font-weight: normal;">Done</label>
+                        </div>
+                        <div class="filter-checkbox">
+                            <input type="checkbox" id="filterPastDue" value="PAST_DUE" />
+                            <label for="filterPastDue" style="margin: 0; font-weight: normal;">Past Due</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sortBy">Sort By</label>
+                    <select id="sortBy">
+                        <option value="dueAt">Due Date</option>
+                        <option value="createdAt">Created Date</option>
+                        <option value="description">Description</option>
+                        <option value="status">Status</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sortDirection">Direction</label>
+                    <select id="sortDirection">
+                        <option value="ASC">Ascending</option>
+                        <option value="DESC">Descending</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pageSize">Items Per Page</label>
+                    <select id="pageSize">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" style="width: 100%;" onclick="todoApp.loadTodos()">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div style="margin-top: 30px;">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">Total Todos</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="notDoneCount">0</div>
+                    <div class="stat-label">Not Done</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="doneCount">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Todo List Section -->
+        <div class="card" style="margin-top: 20px;">
+            <h2>📋 Todos</h2>
+
+            <div id="todoAlert" class="alert"></div>
+
+            <div id="todoList" class="todo-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎯</div>
+                    <p>No todos yet. Create one to get started!</p>
+                </div>
+            </div>
+
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Edit Description Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Description</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editDescription">New Description</label>
+                    <input
+                        type="text"
+                        id="editDescription"
+                        placeholder="Enter new description"
+                        maxlength="255"
+                    />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="todoApp.closeEditModal()">Cancel</button>
+                <button class="btn-primary" onclick="todoApp.saveDescription()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const todoApp = {
+            currentPage: 0,
+            pageSize: 10,
+            currentTodoIdForEdit: null,
+            apiBaseUrl: '/todos',
+
+            /**
+             * Initialize the app
+             */
+            init() {
+                this.setupEventListeners();
+                this.setMinDateTime();
+                this.loadTodos();
+                this.updateStats();
+
+                // Refresh stats every 10 seconds
+                setInterval(() => this.updateStats(), 10000);
+            },
+
+            /**
+             * Set up event listeners
+             */
+            setupEventListeners() {
+                document.getElementById('createTodoForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.createTodo();
+                });
+
+                document.getElementById('filterNotDone').addEventListener('change', () => this.loadTodos());
+                document.getElementById('filterDone').addEventListener('change', () => this.loadTodos());
+                document.getElementById('filterPastDue').addEventListener('change', () => this.loadTodos());
+                document.getElementById('pageSize').addEventListener('change', (e) => {
+                    this.pageSize = parseInt(e.target.value);
+                    this.currentPage = 0;
+                    this.loadTodos();
+                });
+            },
+
+            /**
+             * Set minimum datetime to now
+             */
+            setMinDateTime() {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() + 1);
+                document.getElementById('dueDate').min = now.toISOString().slice(0, 16);
+                document.getElementById('dueDate').value = now.toISOString().slice(0, 16);
+            },
+
+            /**
+             * Get selected status filters
+             */
+            getSelectedStatuses() {
+                const statuses = [];
+                if (document.getElementById('filterNotDone').checked) statuses.push('NOT_DONE');
+                if (document.getElementById('filterDone').checked) statuses.push('DONE');
+                if (document.getElementById('filterPastDue').checked) statuses.push('PAST_DUE');
+                return statuses.length > 0 ? statuses.join(',') : 'NOT_DONE';
+            },
+
+            /**
+             * Create a new todo
+             */
+            async createTodo() {
+                const description = document.getElementById('description').value.trim();
+                const dueAtLocal = document.getElementById('dueDate').value;
+
+                if (!description || !dueAtLocal) {
+                    this.showAlert('createAlert', 'Please fill in all fields', 'error');
+                    return;
+                }
+
+                // Convert local datetime to ISO UTC format
+                const dueDate = new Date(dueAtLocal);
+                const dueAtUTC = dueDate.toISOString();
+
+                try {
+                    const response = await fetch(this.apiBaseUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            description: description,
+                            dueAt: dueAtUTC
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: 'Failed to create todo' }));
+                        this.showAlert('createAlert', error.message || 'Failed to create todo', 'error');
+                        return;
+                    }
+
+                    const todo = await response.json();
+                    this.showAlert('createAlert', `✓ Todo created successfully!`, 'success');
+                    document.getElementById('createTodoForm').reset();
+                    this.setMinDateTime();
+                    this.loadTodos();
+                    this.updateStats();
+                } catch (error) {
+                    this.showAlert('createAlert', `Error: ${error.message}`, 'error');
+                }
+            },
+
+            /**
+             * Load and display todos
+             */
+            async loadTodos() {
+                const statuses = this.getSelectedStatuses();
+                const sortBy = document.getElementById('sortBy').value;
+                const direction = document.getElementById('sortDirection').value;
+                const pageSize = this.pageSize;
+
+                const params = new URLSearchParams({
+                    status: statuses,
+                    page: this.currentPage,
+                    size: pageSize,
+                    sort_by: sortBy,
+                    direction: direction
+                });
+
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}?${params}`);
+                    if (!response.ok) throw new Error('Failed to load todos');
+
+                    const data = await response.json();
+                    this.renderTodos(data.content);
+                    this.renderPagination(data);
+                } catch (error) {
+                    this.showAlert('todoAlert', `Error loading todos: ${error.message}`, 'error');
+                    this.renderTodos([]);
+                }
+            },
+
+            /**
+             * Render todos in the list
+             */
+            renderTodos(todos) {
+                const todoList = document.getElementById('todoList');
+
+                if (todos.length === 0) {
+                    todoList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎯</div>
+                            <p>No todos found</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                todoList.innerHTML = todos.map(todo => `
+                    <div class="todo-item ${todo.status === 'DONE' ? 'done' : ''} ${todo.status === 'PAST_DUE' ? 'past-due' : ''}">
+                        <div class="todo-header">
+                            <div class="todo-title">${this.escapeHtml(todo.description)}</div>
+                            <span class="todo-status status-${this.statusClass(todo.status)}">${todo.status}</span>
+                        </div>
+                        <div class="todo-meta">
+                            <div>📅 Due: ${this.formatDate(todo.dueAt)}</div>
+                            <div>🕐 Created: ${this.formatDate(todo.createdAt)}</div>
+                        </div>
+                        <div class="todo-actions">
+                            ${this.getActionButtons(todo)}
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            /**
+             * Get action buttons based on todo status
+             */
+            getActionButtons(todo) {
+                let buttons = '';
+
+                if (todo.status === 'NOT_DONE') {
+                    buttons += `<button class="btn-primary btn-small" onclick="todoApp.markAsDone('${todo.id}')">✓ Done</button>`;
+                    buttons += `<button class="btn-secondary btn-small" onclick="todoApp.openEditModal('${todo.id}', '${this.escapeHtml(todo.description)}')">✎ Edit</button>`;
+                } else if (todo.status === 'DONE') {
+                    buttons += `<button class="btn-warning btn-small" onclick="todoApp.markAsNotDone('${todo.id}')">↩ Not Done</button>`;
+                } else if (todo.status === 'PAST_DUE') {
+                    buttons += `<span style="color: #999; font-size: 12px; padding: 5px;">🔒 Immutable</span>`;
+                }
+
+                return buttons;
+            },
+
+            /**
+             * Mark todo as done
+             */
+            async markAsDone(id) {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/${id}/mark-done`, {
+                        method: 'PATCH'
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: 'Failed to mark as done' }));
+                        this.showAlert('todoAlert', error.message || 'Failed to mark as done', 'error');
+                        return;
+                    }
+
+                    this.showAlert('todoAlert', '✓ Marked as done!', 'success');
+                    this.loadTodos();
+                    this.updateStats();
+                } catch (error) {
+                    this.showAlert('todoAlert', `Error: ${error.message}`, 'error');
+                }
+            },
+
+            /**
+             * Mark todo as not done
+             */
+            async markAsNotDone(id) {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/${id}/mark-not-done`, {
+                        method: 'PATCH'
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: 'Failed to mark as not done' }));
+                        this.showAlert('todoAlert', error.message || 'Cannot mark as not done - due date may have passed', 'error');
+                        return;
+                    }
+
+                    this.showAlert('todoAlert', '✓ Marked as not done!', 'success');
+                    this.loadTodos();
+                    this.updateStats();
+                } catch (error) {
+                    this.showAlert('todoAlert', `Error: ${error.message}`, 'error');
+                }
+            },
+
+            /**
+             * Open edit modal
+             */
+            openEditModal(id, description) {
+                this.currentTodoIdForEdit = id;
+                document.getElementById('editDescription').value = description;
+                document.getElementById('editModal').classList.add('show');
+                document.getElementById('editDescription').focus();
+            },
+
+            /**
+             * Close edit modal
+             */
+            closeEditModal() {
+                document.getElementById('editModal').classList.remove('show');
+                this.currentTodoIdForEdit = null;
+            },
+
+            /**
+             * Save description
+             */
+            async saveDescription() {
+                if (!this.currentTodoIdForEdit) return;
+
+                const description = document.getElementById('editDescription').value.trim();
+
+                if (!description) {
+                    this.showAlert('todoAlert', 'Description cannot be empty', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/${this.currentTodoIdForEdit}/description`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ description: description })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: 'Failed to update description' }));
+                        this.showAlert('todoAlert', error.message || 'Failed to update description', 'error');
+                        return;
+                    }
+
+                    this.showAlert('todoAlert', '✓ Description updated!', 'success');
+                    this.closeEditModal();
+                    this.loadTodos();
+                } catch (error) {
+                    this.showAlert('todoAlert', `Error: ${error.message}`, 'error');
+                }
+            },
+
+            /**
+             * Render pagination controls
+             */
+            renderPagination(data) {
+                const pagination = document.getElementById('pagination');
+                const totalPages = data.totalPages;
+                const currentPage = data.pageNumber;
+
+                if (totalPages <= 1) {
+                    pagination.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+
+                // Previous button
+                if (currentPage > 0) {
+                    html += `<button class="btn-secondary" onclick="todoApp.goToPage(${currentPage - 1})">← Prev</button>`;
+                }
+
+                // Page buttons
+                for (let i = 0; i < totalPages; i++) {
+                    if (i === currentPage) {
+                        html += `<button class="active">${i + 1}</button>`;
+                    } else if (
+                        i < currentPage - 2 ||
+                        i > currentPage + 2
+                    ) {
+                        if (i === 0 || i === totalPages - 1) {
+                            html += `<button onclick="todoApp.goToPage(${i})">${i + 1}</button>`;
+                        }
+                    } else {
+                        html += `<button onclick="todoApp.goToPage(${i})">${i + 1}</button>`;
+                    }
+                }
+
+                // Next button
+                if (currentPage < totalPages - 1) {
+                    html += `<button class="btn-secondary" onclick="todoApp.goToPage(${currentPage + 1})">Next →</button>`;
+                }
+
+                pagination.innerHTML = html;
+            },
+
+            /**
+             * Go to specific page
+             */
+            goToPage(page) {
+                this.currentPage = page;
+                this.loadTodos();
+            },
+
+            /**
+             * Update statistics
+             */
+            async updateStats() {
+                try {
+                    // Get all todos with all statuses
+                    const allResponse = await fetch(`${this.apiBaseUrl}?status=NOT_DONE,DONE,PAST_DUE&all=true`);
+                    if (!allResponse.ok) return;
+                    const allData = await allResponse.json();
+                    const allTodos = allData.content;
+
+                    // Count by status
+                    const notDoneCount = allTodos.filter(t => t.status === 'NOT_DONE').length;
+                    const doneCount = allTodos.filter(t => t.status === 'DONE').length;
+
+                    document.getElementById('totalCount').textContent = allTodos.length;
+                    document.getElementById('notDoneCount').textContent = notDoneCount;
+                    document.getElementById('doneCount').textContent = doneCount;
+                } catch (error) {
+                    console.error('Failed to update stats:', error);
+                }
+            },
+
+            /**
+             * Show alert message
+             */
+            showAlert(elementId, message, type) {
+                const alert = document.getElementById(elementId);
+                alert.className = `alert ${type === 'error' ? 'alert-error' : type === 'success' ? 'alert-success' : 'alert-info'} show`;
+                alert.textContent = message;
+
+                setTimeout(() => {
+                    alert.classList.remove('show');
+                }, 5000);
+            },
+
+            /**
+             * Format date for display
+             */
+            formatDate(isoString) {
+                const date = new Date(isoString);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'UTC'
+                }) + ' UTC';
+            },
+
+            /**
+             * Get status CSS class
+             */
+            statusClass(status) {
+                return status.toLowerCase().replace(/_/g, '-');
+            },
+
+            /**
+             * Escape HTML to prevent XSS
+             */
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        };
+
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => todoApp.init());
+
+        // Close modal when clicking outside
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') {
+                todoApp.closeEditModal();
+            }
+        });
+
+        // Allow Enter key to save in edit modal
+        document.getElementById('editDescription').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                todoApp.saveDescription();
+            }
+        });
+    </script>
+</body>
+</html>
+
